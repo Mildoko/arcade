@@ -1,0 +1,82 @@
+[
+  {
+    "slug": "reflex",
+    "type": "own",
+    "title": "0.5s Reflex",
+    "subtitle": "Tap the instant the screen flashes",
+    "desc": "A free one-button reaction test you can play in 20 seconds. The screen flashes at a random moment — tap as fast as you can. Works on phone and desktop, no install.",
+    "tags": ["reaction", "1-minute", "one-button", "mobile"],
+    "date": "2026-11-17",
+    "author": { "name": "Us", "url": "" },
+    "entry": "games/reflex/index.html",
+    "controls": ["Tap or click anywhere"],
+    "howto": [
+      "Tap START. The screen stays dark for a random 0.8–2.5 seconds.",
+      "The moment it flashes white, tap. Your reaction time is shown in milliseconds.",
+      "Tap the green flash early and you get a foul — that round does not count."
+    ],
+    "tips": [
+      "Look at the whole screen, not one spot. Peripheral vision reacts faster.",
+      "Breathe out as you wait. Holding your breath makes you flinch.",
+      "Under 200 ms is elite. The average human is around 250 ms."
+    ],
+    "body": [
+      "Reflex started as a joke about how bad reaction tests look on phones: you tap, the screen flashes, and by the time you react the result is already gone. So the whole game is one frame of input — the flash is unmissable, and the only thing that matters is the gap between seeing and moving.",
+      "It is built on a shared 40 KB canvas engine and runs in a single file. There is no login, no leaderboard server, no loading bar. The random delay is real randomness, not a fixed timer, so you cannot learn the rhythm — you can only get better at waiting.",
+      "If you want to compare with friends, the result screen generates a share card with your exact milliseconds. Screenshot it, send it, and watch people immediately try to beat it — that loop is the entire reason the game exists."
+    ],
+    "similar": ["hold", "pocket-coin"]
+  },
+  {
+    "slug": "hold",
+    "type": "own",
+    "title": "Hold the Line",
+    "subtitle": "Release in the green zone",
+    "desc": "Free browser game: hold to charge a bar, release it inside the moving green zone. Ten rounds, one thumb, under a minute.",
+    "tags": ["timing", "1-minute", "one-button", "skill"],
+    "date": "2026-11-17",
+    "author": { "name": "Us", "url": "" },
+    "entry": "games/hold/index.html",
+    "controls": ["Hold pointer down to charge, release to fire"],
+    "howto": [
+      "Press and hold anywhere to fill the bar.",
+      "A green zone slides along the bar faster each round.",
+      "Release while the fill is inside the green zone. Miss twice and the run ends."
+    ],
+    "tips": [
+      "Charge past the zone and wait for it to come back — the bar is a clock.",
+      "Rounds 7–10 are about releasing on the way in, not the way out.",
+      "One clean run takes about 50 seconds, which is exactly the point."
+    ],
+    "body": [
+      "Timing games usually punish you by making the target smaller. Hold the Line punishes you by making the target faster, which keeps the failure readable: you always know you were a fraction early, not that the game cheated.",
+      "The engine is the same container as every other game here — a fixed 720×720 stage that letterboxes onto any screen. Physics is `value += rate * dt`, so it behaves identically at 30 fps and 144 fps.",
+      "Misses are loud on purpose. Feedback within one frame is the difference between 'unfair' and 'my fault', and this game lives entirely on that line."
+    ],
+    "similar": ["reflex"]
+  },
+  {
+    "slug": "pocket-coin",
+    "type": "third",
+    "title": "Pocket Coin",
+    "subtitle": "A two-second coin flip you can call",
+    "desc": "A third-party submission: call heads or tails, flip, and get a shareable result. Uploaded by a community creator and hosted in our standard container.",
+    "tags": ["luck", "1-minute", "third-party"],
+    "date": "2026-11-16",
+    "author": { "name": "Community submission #1", "url": "" },
+    "entry": "games/pocket-coin/index.html",
+    "controls": ["Tap to flip"],
+    "howto": [
+      "Pick heads or tails.",
+      "Tap to flip. The coin spins once and lands.",
+      "Win streaks are tracked locally, nothing is uploaded."
+    ],
+    "tips": ["It is a fair coin. That is the whole joke."],
+    "body": [
+      "This page is a live test of the third-party slot: it was added by editing one entry in `data/games.json` and dropping one folder into `games/`. No review queue, no manual layout, no screenshot upload — the cover is generated from the title, and the SEO page is built from the metadata.",
+      "Because it is a third-party game it gets the same container, the same anti-hijack guard and the same share card, but its author line points at the submitter instead of us. If a game is pulled for a rule violation, the build removes its pages, its embed widget and its sitemap entry in one command.",
+      "That is the entire economic argument for an open slot: supply grows without growing the review team."
+    ],
+    "similar": ["reflex"]
+  }
+]

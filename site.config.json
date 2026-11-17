@@ -1,0 +1,37 @@
+{
+  "name": "1 Minute Arcade",
+  "shortName": "1min",
+  "tagline": "Tiny browser games you can finish in a minute. No install, no login, works on phones.",
+  "url": "https://mildoko.github.io",
+  "lang": "en",
+  "locales": [
+    "en"
+  ],
+  "email": "mildoko@users.noreply.github.com",
+  "gaId": "",
+  "channels": [
+    "tt",
+    "yt",
+    "ig",
+    "x",
+    "rd",
+    "hn",
+    "ph",
+    "cg",
+    "gp",
+    "itch",
+    "embed",
+    "ai",
+    "em"
+  ],
+  "colors": {
+    "paper": "#ffffff",
+    "ink": "#16223a",
+    "inkSoft": "#5b6b82",
+    "stamp": "#e8483f",
+    "gold": "#ffc93c",
+    "line": "#d7dee8"
+  },
+  "basePath": "/arcade",
+  "customDomain": ""
+}

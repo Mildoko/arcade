@@ -1,0 +1,21 @@
+{
+  "name": "1min-arcade",
+  "private": true,
+  "type": "module",
+  "description": "Static browser-game site: one SEO page per game, official embed widget, channel attribution, automated submission gate. Zero dependencies.",
+  "scripts": {
+    "build": "node build.mjs --clean",
+    "check": "node tools/check.mjs",
+    "verify": "node build.mjs --clean && node tools/check.mjs",
+    "serve": "python -m http.server 8099 --directory public",
+    "serve:fixtures": "cd tests/fixtures && python -m http.server 8100",
+    "test:gate": "node tests/gate.test.mjs",
+    "test:intake": "node tests/intake.test.mjs",
+    "test:browser": "node tests/smoke.mjs && node tests/submit.test.mjs",
+    "test": "npm run test:gate && npm run test:intake",
+    "gate": "node tools/gate.mjs",
+    "intake": "node tools/intake.mjs",
+    "indexnow": "node tools/indexnow.mjs"
+  },
+  "engines": { "node": ">=18" }
+}

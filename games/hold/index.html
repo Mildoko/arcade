@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="robots" content="noindex,follow">
+<title>Hold the Line</title>
+<script src="/assets/config.js"></script>
+<script src="/assets/guard.js"></script>
+<script src="/assets/engine.js"></script>
+<style>html,body{margin:0;height:100%;background:#0c1220;overflow:hidden;-webkit-tap-highlight-color:transparent}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function () {
+  "use strict";
+  var st = Z.stage(document.getElementById("c"), 720, 720);
+  var g = st.ctx;
+
+  var BAR = { x: 80, y: 470, w: 560, h: 56 };
+  var MAX = 10, STRIKES = 2;
+
+  var round, strikes, score, holding, fill, zoneX, zoneW, zoneDir, zoneSpeed, alive, best;
+
+  function reset() {
+    round = 1; strikes = 0; score = 0; holding = false; fill = 0; alive = true;
+    setupRound();
+    draw();
+  }
+
+  function setupRound() {
+    zoneW = Math.max(38, 130 - round * 9);
+    zoneX = Z.rand(0, BAR.w - zoneW);
+    zoneDir = Math.random() < 0.5 ? 1 : -1;
+    zoneSpeed = 130 + round * 34;
+    fill = 0;
+  }
+
+  function draw() {
+    g.fillStyle = "#0c1220";
+    g.fillRect(0, 0, 720, 720);
+
+    g.textAlign = "center";
+    g.fillStyle = "#f4f7fb";
+    g.font = "850 34px ui-sans-serif, system-ui, sans-serif";
+    g.fillText("HOLD THE LINE", 360, 92);
+
+    g.font = "600 22px ui-sans-serif, system-ui, sans-serif";
+    g.fillStyle = "#8fa2bd";
+    g.fillText("round " + round + " / " + MAX + "   ·   strikes " + strikes + "/" + STRIKES + "   ·   score " + score, 360, 132);
+
+    // 进度圆环
+    g.strokeStyle = "#22304a"; g.lineWidth = 12;
+    g.beginPath(); g.arc(360, 300, 92, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = "#ffc93c";
+    g.beginPath(); g.arc(360, 300, 92, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (round - 1) / MAX); g.stroke();
+    g.fillStyle = "#f4f7fb";
+    g.font = "900 46px ui-sans-serif, system-ui, sans-serif";
+    g.fillText(round, 360, 318);
+
+    // 条
+    g.fillStyle = "#16223a";
+    roundRect(BAR.x, BAR.y, BAR.w, BAR.h, 12); g.fill();
+
+    g.fillStyle = "#2fd47a";
+    roundRect(BAR.x + zoneX, BAR.y, zoneW, BAR.h, 12); g.fill();
+
+    if (holding || fill > 0) {
+      g.fillStyle = "#ffc93c";
+      roundRect(BAR.x, BAR.y, Math.min(fill, BAR.w), BAR.h, 12); g.fill();
+    }
+
+    g.fillStyle = "#8fa2bd";
+    g.font = "600 20px ui-sans-serif, system-ui, sans-serif";
+    g.fillText(holding ? "release inside the green zone" : "hold anywhere to charge", 360, 578);
+
+    if (best) { g.fillStyle = "#ffc93c"; g.fillText("best: " + best, 360, 620); }
+  }
+
+  function roundRect(x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  st.on("down", function () {
+    if (!alive || holding) return;
+    holding = true;
+    fill = 0;
+  });
+
+  st.on("up", function () {
+    if (!holding || !alive) return;
+    holding = false;
+    var hit = fill >= zoneX && fill <= zoneX + zoneW;
+    if (hit) {
+      score += round;
+      Z.report("play_hit", { round: round });
+      round++;
+      if (round > MAX) return win();
+      setupRound();
+    } else {
+      strikes++;
+      fill = 0;
+      Z.report("play_miss", { round: round, strikes: strikes });
+      if (strikes >= STRIKES) return lose();
+      setupRound();
+    }
+    draw();
+  });
+
+  function win() {
+    alive = false;
+    best = best ? Math.max(best, score) : score;
+    draw();
+    Z.result({
+      title: "Ten in a row",
+      value: score,
+      unit: "pts",
+      rank: "clean run",
+      lines: ["No misses in 10 rounds.", "The zone never gets slower — only smaller and faster."],
+      shareText: "I scored " + score + " in Hold the Line. Beat that →",
+      canvas: document.getElementById("c"),
+      onRetry: reset
+    });
+  }
+
+  function lose() {
+    alive = false;
+    best = best ? Math.max(best, score) : score;
+    draw();
+    Z.result({
+      title: "Out of strikes",
+      value: score,
+      unit: "pts",
+      lines: ["Reached round " + round + " of " + MAX + ".", "The bar is a clock — wait for the zone to come back."],
+      shareText: "I scored " + score + " in Hold the Line before choking. Beat that →",
+      canvas: document.getElementById("c"),
+      onRetry: reset
+    });
+  }
+
+  Z.loop(function (dt) {
+    if (!alive) return;
+    if (holding) {
+      fill += 430 * dt;
+      if (fill > BAR.w) fill -= BAR.w;
+      draw();
+    }
+    zoneX += zoneDir * zoneSpeed * dt;
+    if (zoneX < 0) { zoneX = 0; zoneDir = 1; }
+    if (zoneX > BAR.w - zoneW) { zoneX = BAR.w - zoneW; zoneDir = -1; }
+    if (!holding) draw();
+  });
+
+  reset();
+  Z.start({
+    title: "Hold the Line",
+    sub: "Hold to charge. Release inside the moving green zone.",
+    hint: "10 rounds · two misses and the run ends",
+    button: "START"
+  }, reset);
+})();
+</script>
+</body>
+</html>

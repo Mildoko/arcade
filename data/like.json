@@ -1,0 +1,5 @@
+{
+  "suika-game": { "title": "Suika Game", "games": ["hold", "reflex"] },
+  "wordle": { "title": "Wordle", "games": ["pocket-coin", "reflex"] },
+  "one-minute-games": { "title": "One minute browser games", "games": ["reflex", "hold", "pocket-coin"] }
+}

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="robots" content="noindex,follow">
+<title>Pocket Coin</title>
+<script src="/assets/config.js"></script>
+<script src="/assets/guard.js"></script>
+<script src="/assets/engine.js"></script>
+<style>html,body{margin:0;height:100%;background:#0c1220;overflow:hidden;-webkit-tap-highlight-color:transparent}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function () {
+  "use strict";
+  var st = Z.stage(document.getElementById("c"), 720, 720);
+  var g = st.ctx;
+
+  var call = null;          // "heads" | "tails"
+  var flipping = false;
+  var angle = 0, spin = 0;
+  var result = null;        // "heads" | "tails"
+  var streak = 0, best = 0;
+
+  function draw() {
+    g.fillStyle = "#0c1220";
+    g.fillRect(0, 0, 720, 720);
+
+    g.textAlign = "center";
+    g.fillStyle = "#f4f7fb";
+    g.font = "850 34px ui-sans-serif, system-ui, sans-serif";
+    g.fillText("POCKET COIN", 360, 92);
+
+    g.font = "600 22px ui-sans-serif, system-ui, sans-serif";
+    g.fillStyle = "#8fa2bd";
+    g.fillText("streak " + streak + (best ? "   ·   best " + best : ""), 360, 132);
+
+    // 硬币（宽度随 cos 变化模拟翻转）
+    var w = Math.abs(Math.cos(angle)) * 190 + 12;
+    var face = Math.cos(angle) >= 0 ? "H" : "T";
+    g.save();
+    g.translate(360, 320);
+    g.fillStyle = "#ffc93c";
+    g.beginPath();
+    g.ellipse(0, 0, w / 2, 95, 0, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#16223a";
+    g.font = "900 " + Math.max(28, Math.min(96, w * 0.55)) + "px ui-sans-serif, system-ui, sans-serif";
+    g.fillText(face, 0, 32);
+    g.restore();
+
+    g.fillStyle = "#f4f7fb";
+    g.font = "600 24px ui-sans-serif, system-ui, sans-serif";
+    if (flipping) g.fillText("flipping…", 360, 500);
+    else if (result) {
+      var won = result === call;
+      g.fillStyle = won ? "#2fd47a" : "#e8483f";
+      g.font = "900 34px ui-sans-serif, system-ui, sans-serif";
+      g.fillText(won ? "IT'S " + result.toUpperCase() + " — YOU WIN" : "IT'S " + result.toUpperCase() + " — YOU LOSE", 360, 496);
+      g.fillStyle = "#8fa2bd";
+      g.font = "600 20px ui-sans-serif, system-ui, sans-serif";
+      g.fillText("tap to flip again", 360, 540);
+    } else {
+      g.fillText("call it, then tap to flip", 360, 500);
+    }
+
+    // 选择按钮
+    drawChoice("HEADS", 200, 590, call === "heads");
+    drawChoice("TAILS", 520, 590, call === "tails");
+  }
+
+  function drawChoice(label, x, y, on) {
+    g.fillStyle = on ? "#f4f7fb" : "transparent";
+    g.strokeStyle = on ? "#f4f7fb" : "#3a4a63";
+    g.lineWidth = 4;
+    roundRect(x - 100, y - 34, 200, 68, 34);
+    g.fill(); g.stroke();
+    g.fillStyle = on ? "#16223a" : "#8fa2bd";
+    g.font = "800 22px ui-sans-serif, system-ui, sans-serif";
+    g.textAlign = "center";
+    g.fillText(label, x, y + 8);
+  }
+
+  function roundRect(x, y, w, h, r) {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  }
+
+  function flip() {
+    if (flipping) return;
+    if (!call) call = "heads";
+    flipping = true;
+    result = null;
+    var target = Math.PI * 2 * (4 + Math.random() * 2);
+    var t0 = Z.now();
+    var dur = 900;
+    (function tick() {
+      var p = Math.min(1, (Z.now() - t0) / dur);
+      angle = target * easeOut(p);
+      draw();
+      if (p < 1) return requestAnimationFrame(tick);
+      flipping = false;
+      angle = 0;
+      result = Math.random() < 0.5 ? "heads" : "tails";
+      if (result === call) { streak++; best = Math.max(best, streak); }
+      else streak = 0;
+      draw();
+      Z.report("play_flip", { won: result === call, streak: streak });
+    })();
+  }
+
+  function easeOut(p) { return 1 - Math.pow(1 - p, 3); }
+
+  st.on("tap", function (p) {
+    if (p.y > 540 && p.y < 640) {
+      call = p.x < 360 ? "heads" : "tails";
+      draw();
+      return;
+    }
+    if (!result) { flip(); return; }
+    // 结算后点任意处再来一次
+    result = null;
+    flip();
+  });
+
+  draw();
+  Z.start({
+    title: "Pocket Coin",
+    sub: "Call heads or tails, then tap to flip. Nothing is uploaded — streaks stay on your device.",
+    hint: "A community submission hosted in the standard container",
+    button: "FLIP"
+  }, function () { call = "heads"; draw(); });
+})();
+</script>
+</body>
+</html>

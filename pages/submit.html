@@ -1,0 +1,262 @@
+<main><div class="wrap">
+<section class="game-head">
+<div class="kicker">For creators</div>
+<h1>Put your game here</h1>
+<p class="sub">Drop your game folder — the same automated checks that run at intake run right here, in your browser. Fix what it flags, then send it.</p>
+</section>
+
+<div class="cols" style="padding-top:10px">
+<article class="prose">
+
+<h2>1 · Self-check</h2>
+<div id="drop" style="border:3px dashed var(--ink);border-radius:14px;padding:26px 18px;text-align:center;cursor:pointer;background:var(--paper)">
+  <strong>Drop your game folder here</strong>
+  <p style="color:var(--ink-soft);font-size:14px;margin:6px 0 0">or click to pick a folder · needs <code>index.html</code> at the top level</p>
+  <input type="file" id="pick" webkitdirectory directory multiple hidden>
+</div>
+<div id="report" style="margin-top:14px"></div>
+
+<div id="metaBlock" hidden>
+<h2>2 · Metadata</h2>
+<div style="display:grid;gap:10px">
+  <label style="font-size:13px;color:var(--ink-soft)">Title<input id="fTitle" style="display:block;width:100%;padding:9px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit"></label>
+  <label style="font-size:13px;color:var(--ink-soft)">Slug (url)<input id="fSlug" style="display:block;width:100%;padding:9px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit"></label>
+  <label style="font-size:13px;color:var(--ink-soft)">One-line rule (subtitle)<input id="fSub" style="display:block;width:100%;padding:9px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit"></label>
+  <label style="font-size:13px;color:var(--ink-soft)">Description (140–160 chars, used for search)<textarea id="fDesc" rows="3" style="display:block;width:100%;padding:9px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit"></textarea></label>
+  <label style="font-size:13px;color:var(--ink-soft)">Tags (comma separated)<input id="fTags" value="1-minute, third-party" style="display:block;width:100%;padding:9px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit"></label>
+  <label style="font-size:13px;color:var(--ink-soft)">Your name / handle<input id="fAuthor" style="display:block;width:100%;padding:9px 12px;border:2px solid var(--ink);border-radius:10px;font:inherit"></label>
+</div>
+
+<h2>3 · Send it</h2>
+<div class="actions" style="margin:0 0 12px">
+  <button class="btn primary" id="dl" type="button">Download submission.json</button>
+  <button class="btn" id="copyMail" type="button">Copy email text</button>
+</div>
+<p style="font-size:14px;color:var(--ink-soft)">Email the zip + <code>submission.json</code> to <a href="mailto:{{EMAIL}}">{{EMAIL}}</a>. If the self-check is green it goes live the same day — no review queue.</p>
+<pre class="code" id="jsonOut" style="max-height:280px"></pre>
+</div>
+
+<h2>Rules (short)</h2>
+<ul>
+<li>One folder, one <code>index.html</code>, everything relative. 50 MB total, 25 MB per file.</li>
+<li>No external ads, no other portal SDKs, no analytics, no outbound promo links inside the game.</li>
+<li>Must run on a phone with one thumb and start without instructions.</li>
+<li>Must not phone home. Local storage is fine; accounts and payments are not.</li>
+<li>You keep the copyright. We keep the right to remove anything that breaks the rules.</li>
+</ul>
+
+<h2>Revenue</h2>
+<p>Ads on the game page are ours; we pay 90% of the net ad revenue attributable to your game's pages, monthly, from a minimum balance of $50. No exclusivity — publish the same game anywhere else.</p>
+
+<h2>Prefer the command line?</h2>
+<pre class="code">unzip my-game.zip -d my-game
+node tools/gate.mjs my-game --boot            # full check + real boot in headless Chrome
+node tools/intake.mjs my-game --author="Your Name"</pre>
+</article>
+
+<aside class="side">
+<div class="panel"><h3>What we check</h3>
+<dl>
+<dt>Entry</dt><dd>index.html at root</dd>
+<dt>Size</dt><dd>50 MB · 25 MB per file</dd>
+<dt>Ads</dt><dd>AdSense &amp; co. → reject</dd>
+<dt>Portals</dt><dd>other SDKs → reject</dd>
+<dt>Trackers</dt><dd>GTM / GA / pixel → reject</dd>
+<dt>Assets</dt><dd>must be self-contained</dd>
+<dt>Links</dt><dd>outbound → flag</dd>
+<dt>Frame</dt><dd>top.location → flag</dd>
+<dt>Mobile</dt><dd>viewport + touch</dd>
+</dl>
+</div>
+<div class="panel"><h3>What you get</h3>
+<dl><dt>Page</dt><dd>Static SEO page</dd><dt>Embed</dt><dd>Official widget</dd><dt>Sitemap</dt><dd>Auto</dd><dt>Stats</dt><dd>Plays, sessions</dd></dl></div>
+<div class="panel"><h3>What we don't do</h3>
+<p style="font-size:13px;color:var(--ink-soft)">No exclusivity, no DRM, no forced SDK, no revenue share on your own channels.</p></div>
+</aside>
+</div></div></main>
+
+<script type="module">
+import { checkSubmission, LIMITS, isTextFile } from "/assets/rules.js";
+
+const drop = document.getElementById("drop");
+const pick = document.getElementById("pick");
+const report = document.getElementById("report");
+const metaBlock = document.getElementById("metaBlock");
+const jsonOut = document.getElementById("jsonOut");
+let lastResult = null;
+
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function entriesFrom(files) {
+  const out = [];
+  for (const f of files) {
+    let p = f.webkitRelativePath || f.name;
+    const seg = p.split("/");
+    if (seg.length > 1) p = seg.slice(1).join("/"); // drop the outer folder name
+    let text = null;
+    if (isTextFile(p) && f.size <= LIMITS.maxTextScanBytes) {
+      try { text = await f.text(); } catch (e) {}
+    }
+    out.push({ path: p, size: f.size, text });
+  }
+  return out;
+}
+
+function row(x, bg) {
+  return '<li style="margin:6px 0;font-size:14px">' +
+    '<code style="background:' + bg + ';color:#fff;padding:1px 6px;border-radius:999px;font-size:11px">' + esc(x.code) + "</code> " +
+    esc(x.msg) +
+    (x.path ? ' <span style="color:var(--ink-soft);font-size:12px">' + esc(x.path) + "</span>" : "") +
+    "</li>";
+}
+
+function render(result) {
+  lastResult = result;
+  const e = result.errors, w = result.warnings, s = result.stats;
+  const head = e.length
+    ? '<strong style="color:var(--stamp)">✗ ' + e.length + " blocking issue" + (e.length > 1 ? "s" : "") + "</strong>"
+    : w.length
+      ? '<strong style="color:#b07d00">! passes, but ' + w.length + " thing" + (w.length > 1 ? "s" : "") + " to look at</strong>"
+      : '<strong style="color:#1d7a48">✓ all clear — this can go live</strong>';
+
+  report.innerHTML =
+    '<div style="border:3px solid var(--ink);border-radius:14px;padding:14px 16px">' +
+      '<div style="font-size:15px">' + head + "</div>" +
+      (s ? '<div style="font-size:13px;color:var(--ink-soft);margin-top:4px">' + s.files + " files · " + esc(s.totalText) + " · biggest " + esc(s.biggest.size) + " (" + esc(s.biggest.path) + ")</div>" : "") +
+      (e.length ? '<ul style="list-style:none;padding:0;margin:10px 0 0">' + e.map(function (x) { return row(x, "#e8483f"); }).join("") + "</ul>" : "") +
+      (w.length ? '<ul style="list-style:none;padding:0;margin:10px 0 0">' + w.map(function (x) { return row(x, "#b07d00"); }).join("") + "</ul>" : "") +
+    "</div>";
+
+  metaBlock.hidden = e.length > 0;
+  if (e.length) return;
+  const m = result.meta || {};
+  const t = document.getElementById("fTitle");
+  if (!t.dataset.touched) {
+    t.value = m.title || "";
+    document.getElementById("fSlug").value = result.slugSuggestion || "";
+    document.getElementById("fDesc").value = m.desc || "";
+  }
+  updateJson();
+}
+
+function updateJson() {
+  const data = {
+    slug: document.getElementById("fSlug").value.trim(),
+    title: document.getElementById("fTitle").value.trim(),
+    subtitle: document.getElementById("fSub").value.trim(),
+    desc: document.getElementById("fDesc").value.trim(),
+    tags: document.getElementById("fTags").value.split(",").map(function (t) { return t.trim(); }).filter(Boolean),
+    author: document.getElementById("fAuthor").value.trim(),
+    entry: "index.html",
+    selfCheck: {
+      errors: lastResult ? lastResult.errors.length : 0,
+      warnings: lastResult ? lastResult.warnings.map(function (w) { return w.code; }) : [],
+      files: lastResult && lastResult.stats ? lastResult.stats.files : 0,
+      size: lastResult && lastResult.stats ? lastResult.stats.totalText : "",
+    },
+    generatedAt: new Date().toISOString().slice(0, 19) + "Z",
+  };
+  jsonOut.textContent = JSON.stringify(data, null, 2);
+  return data;
+}
+
+async function handle(files) {
+  report.innerHTML = '<p style="color:var(--ink-soft);font-size:14px">checking ' + files.length + " files…</p>";
+  const entries = await entriesFrom(files);
+  render(checkSubmission(entries, {}));
+}
+
+/* --- pick a folder --- */
+drop.addEventListener("click", function () { pick.click(); });
+pick.addEventListener("change", function () { if (pick.files.length) handle(pick.files); });
+
+/* --- drag & drop (folder-aware) --- */
+["dragenter", "dragover"].forEach(function (t) {
+  drop.addEventListener(t, function (e) { e.preventDefault(); drop.style.background = "#fff8e1"; });
+});
+["dragleave", "drop"].forEach(function (t) {
+  drop.addEventListener(t, function () { drop.style.background = "var(--paper)"; });
+});
+drop.addEventListener("drop", function (e) {
+  e.preventDefault();
+  const items = e.dataTransfer.items;
+  const files = [];
+  const entries = [];
+  if (items && items.length) {
+    for (const it of items) {
+      const en = it.webkitGetAsEntry && it.webkitGetAsEntry();
+      if (en) entries.push(en);
+    }
+  }
+  function walk(entry, prefix) {
+    return new Promise(function (resolve) {
+      if (entry.isFile) {
+        entry.file(function (f) {
+          Object.defineProperty(f, "webkitRelativePath", { value: prefix + f.name });
+          files.push(f);
+          resolve();
+        });
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        function readAll() {
+          reader.readEntries(function (batch) {
+            if (!batch.length) return resolve();
+            Promise.all(batch.map(function (b) { return walk(b, prefix + entry.name + "/"); })).then(readAll);
+          });
+        }
+        readAll();
+      } else resolve();
+    });
+  }
+  if (entries.length) {
+    Promise.all(entries.map(function (en) { return walk(en, ""); })).then(function () {
+      if (files.length) return handle(files);
+      if (e.dataTransfer.files.length) handle(e.dataTransfer.files);
+    });
+  } else if (e.dataTransfer.files.length) {
+    handle(e.dataTransfer.files);
+  }
+});
+
+/* --- metadata inputs --- */
+["fTitle", "fSlug", "fSub", "fDesc", "fTags", "fAuthor"].forEach(function (id) {
+  const el = document.getElementById(id);
+  el.addEventListener("input", function () {
+    if (id === "fTitle") el.dataset.touched = "1";
+    if (lastResult) updateJson();
+  });
+  el.addEventListener("blur", function () {
+    if (id === "fSlug") el.value = el.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    if (lastResult) updateJson();
+  });
+});
+
+document.getElementById("dl").addEventListener("click", function () {
+  const data = updateJson();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = (data.slug || "submission") + ".json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById("copyMail").addEventListener("click", async function (ev) {
+  const data = updateJson();
+  const text = "Submission: " + (data.title || data.slug) +
+    "\nAuthor: " + (data.author || "-") +
+    "\nSlug: " + data.slug +
+    "\n\n" + (data.desc || "") +
+    "\n\nSelf-check: " + data.selfCheck.errors + " errors / " + data.selfCheck.warnings.length +
+    " warnings / " + data.selfCheck.files + " files / " + data.selfCheck.size +
+    "\n\nAttach the zip. Metadata:\n" + JSON.stringify(data, null, 2);
+  try {
+    await navigator.clipboard.writeText(text);
+    ev.target.textContent = "Copied ✓";
+  } catch (e) {
+    jsonOut.textContent = text;
+    ev.target.textContent = "text is below";
+  }
+  setTimeout(function () { ev.target.textContent = "Copy email text"; }, 1600);
+});
+</script>

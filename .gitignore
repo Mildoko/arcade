@@ -1,0 +1,11 @@
+# 生成物，别提交
+public/
+.shots/
+.indexnow-key
+
+# 本机临时
+node_modules/
+*.log
+
+# 本地子路径预览
+dist/

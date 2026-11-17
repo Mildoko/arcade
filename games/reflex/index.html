@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="robots" content="noindex,follow">
+<title>0.5s Reflex</title>
+<script src="/assets/config.js"></script>
+<script src="/assets/guard.js"></script>
+<script src="/assets/engine.js"></script>
+<style>html,body{margin:0;height:100%;background:#0c1220;overflow:hidden;-webkit-tap-highlight-color:transparent}</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function () {
+  "use strict";
+  var st = Z.stage(document.getElementById("c"), 720, 720);
+  var g = st.ctx;
+  var phase = "idle";     // idle | wait | flash | done | foul
+  var started = 0, ms = 0, fouls = 0, best = 0;
+  var timer = 0;
+  var flashColor = "#fff";
+
+  function draw() {
+    g.fillStyle = phase === "flash" ? flashColor : "#0c1220";
+    g.fillRect(0, 0, 720, 720);
+
+    g.textAlign = "center";
+    if (phase === "wait") {
+      g.fillStyle = "#8fa2bd";
+      g.font = "600 30px ui-sans-serif, system-ui, sans-serif";
+      g.fillText("wait for the flash…", 360, 360);
+      g.fillStyle = "#3a4a63";
+      g.beginPath(); g.arc(360, 430, 14, 0, Math.PI * 2); g.fill();
+    } else if (phase === "foul") {
+      g.fillStyle = "#e8483f";
+      g.font = "900 64px ui-sans-serif, system-ui, sans-serif";
+      g.fillText("TOO EARLY", 360, 350);
+      g.fillStyle = "#f4f7fb";
+      g.font = "600 26px ui-sans-serif, system-ui, sans-serif";
+      g.fillText("fouls: " + fouls, 360, 400);
+      g.fillText("tap to keep the round going", 360, 450);
+    } else if (phase === "done") {
+      // 结算面板盖在上面，画布只留底色，别让背后的字透出来
+    } else if (phase === "idle") {
+      g.fillStyle = "#f4f7fb";
+      g.font = "850 44px ui-sans-serif, system-ui, sans-serif";
+      g.fillText("0.5s REFLEX", 360, 330);
+      g.fillStyle = "#8fa2bd";
+      g.font = "600 24px ui-sans-serif, system-ui, sans-serif";
+      g.fillText("tap the instant the screen flashes", 360, 375);
+      if (best) {
+        g.fillStyle = "#ffc93c";
+        g.fillText("best this session: " + best + " ms", 360, 430);
+      }
+    }
+  }
+
+  function run() {
+    phase = "wait";
+    draw();
+    clearTimeout(timer);
+    timer = setTimeout(function () {
+      if (phase !== "wait") return;
+      phase = "flash";
+      started = Z.now();
+      draw();
+    }, Z.rand(800, 2500));
+  }
+
+  function rank(v) {
+    if (v < 180) return "inhuman";
+    if (v < 220) return "elite";
+    if (v < 260) return "good";
+    if (v < 320) return "average";
+    return "sleepy";
+  }
+
+  function finish() {
+    phase = "done";
+    best = best ? Math.min(best, ms) : ms;
+    draw();
+    Z.result({
+      title: "Your reaction",
+      value: ms,
+      unit: "ms",
+      rank: rank(ms),
+      lines: ["Average human: 250 ms", "Elite: under 220 ms", "Fouls this session: " + fouls],
+      shareText: "I reacted in " + ms + " ms. Beat that →",
+      canvas: document.getElementById("c"),
+      onRetry: run
+    });
+  }
+
+  st.on("tap", function () {
+    if (phase === "wait") {
+      clearTimeout(timer);
+      fouls++;
+      phase = "foul";
+      draw();
+      Z.report("play_foul");
+      setTimeout(function () { phase = "idle"; draw(); Z.start({ title: "0.5s Reflex", sub: "tap the instant it flashes", button: "RETRY" }, run); }, 900);
+    } else if (phase === "flash") {
+      ms = Math.round(Z.now() - started);
+      finish();
+    }
+  });
+
+  draw();
+  Z.start({
+    title: "0.5s Reflex",
+    sub: "The screen flashes at a random moment. Tap as fast as you can.",
+    hint: "Average human: 250 ms · under 220 ms is elite",
+    button: "START"
+  }, run);
+})();
+</script>
+</body>
+</html>
