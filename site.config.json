@@ -33,5 +33,7 @@
     "line": "#d7dee8"
   },
   "basePath": "/arcade",
-  "customDomain": ""
+  "customDomain": "",
+  "githubUser": "Mildoko",
+  "projectRepo": "arcade"
 }

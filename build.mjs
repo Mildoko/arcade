@@ -446,17 +446,17 @@ function buildPlayPage(g) {
 <span style="margin-left:auto"></span>
 <a href="/s/${g.slug}/?c=sh" style="color:#8fa2bd;text-decoration:none">Share</a>
 </div>
-<iframe id="game" src="/${g.entry}?light=1" title="${esc(g.title)}" style="flex:1;border:0;width:100%" allow="fullscreen; gamepad; autoplay"></iframe>
+<iframe id="game" data-src="/${g.entry}" title="${esc(g.title)}" style="flex:1;border:0;width:100%" allow="fullscreen; gamepad; autoplay"></iframe>
 </main>
 <script>
 (function(){
   var ch = (window.ZCH && ZCH.current) || "direct";
   var iframe = document.getElementById("game");
   try {
-    var u = new URL(iframe.src, location.origin);
+    var u = new URL(iframe.dataset.src || iframe.src, location.origin);
     u.searchParams.set("c", ch);
     iframe.src = u.pathname + u.search;
-  } catch(e){}
+  } catch (e) { iframe.src = iframe.dataset.src; }
   window.addEventListener("message", function(e){
     if (!e.data || e.data.zkind !== "gamedata") return;
     var p = e.data.payload || {};

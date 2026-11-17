@@ -23,10 +23,8 @@ jobs:
         with:
           node-version: 20
 
-      # 项目站部署在 /arcade/ 子路径下，构建时必须带 basePath
+      # basePath 跟 site.config.json 走（项目站是 /arcade，换自定义域名后改成 ""）
       - name: Build
-        env:
-          ARCADE_BASE_PATH: /arcade
         run: node build.mjs --clean
 
       - name: Static checks
