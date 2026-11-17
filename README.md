@@ -28,7 +28,11 @@ arcade/
 ├─ tools/gate.mjs        收稿闸门：对一个目录跑全部检测（可 --boot 真启动）
 ├─ tools/intake.mjs      入库：过闸门 → 拷文件 → 写 games.json → build → check
 ├─ tools/check.mjs       静态体检（CI 用，0 failed 才算过关）
+├─ tools/serve.mjs       本地预览（按 basePath 服务，和线上一致，不再依赖 python）
+├─ tools/check-links.mjs 链接巡检（子路径部署最容易坏在这，静态检查看不出来）
+├─ tools/set-domain.mjs  换域名：url / basePath / customDomain 一把改对
 ├─ tools/indexnow.mjs    IndexNow 推送（Bing / AI 搜索的入口）
+├─ deploy/               部署相关（is-a.dev 域名申请说明）
 ├─ tests/smoke.mjs       Playwright 真交互冒烟（点 PLAY → 真玩一局 → 分享）
 └─ public/               生成物（不提交，.gitignore 已排除）
 ```
@@ -124,14 +128,18 @@ embed/<slug>/  ←  允许被任意第三方嵌，带水印 + 回流链接 ?c=em
 
 1. 改 `site.config.json` 的 `url` 与 `gaId`（`check` 会 WARN 提醒）。
 2. 每作放一张真截图到 `public/assets/og/<slug>.png`？—— 不行，`public/` 会被清。放到 `assets/og-src/` 后自行复制，或直接改 `data` 里加 `cover` 字段。**默认的社交卡是按 slug 上色生成的，能看，但真截图转化高得多。**
-3. 把 `.gitignore` 里的 `public/` 交给 CI 部署（GitHub Pages / Cloudflare Pages 都行），并跑一次 `node tools/indexnow.mjs`。
+3. **已接好的部署**：push 到 `main` → GitHub Actions 自动 `build + check + gate/intake 测试 + 部署 Pages`，线上是 <https://mildoko.github.io/arcade/>。
+   - 子路径部署由 `site.config.json` 的 `basePath` 控制（现在是 `/arcade`）
+   - 换域名一条命令：`node tools/set-domain.mjs arcade.is-a.dev`（同时改 url / basePath / customDomain）
+   - 免费域名的申请材料与步骤：[`deploy/is-a.dev/说明.md`](deploy/is-a.dev/说明.md)
+   - 发布后跑一次 `node tools/indexnow.mjs` 推 Bing（AI 搜索入口）
 
 ## 体检与测试
 
 ```bash
 npm run verify                 # build + check（静态 8 类断言）
 npm test                       # gate 24 项 + intake 23 项，不需要浏览器，秒级
-npm run serve                  # 终端 A：站点 8099
+npm run serve                  # 终端 A：node tools/serve.mjs（8099，自动带 basePath）
 npm run serve:fixtures         # 终端 B：假装"别家网站" 8100
 npm run test:browser           # 终端 C：Playwright 真交互
 ```
